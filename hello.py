@@ -1,12 +1,21 @@
+# -*- coding: utf-8 -*-
 from flask import Flask
 from flask import render_template
 from flask import abort
 from flask.ext.script import Manager
 from flask.ext.bootstrap import Bootstrap
+from flask.ext.moment import Moment
+from datetime import datetime
 
 app = Flask(__name__)
+
+# 通过命令行方式管理 app
 manager = Manager(app)
+# 添加 Bootstrap
 bootstrap = Bootstrap(app)
+
+# 添加 Moment
+moment = Moment(app)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -18,7 +27,7 @@ def internal_server_error(e):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', current_time=datetime.utcnow())
 
 @app.route('/user/<name>')
 def user(name):
