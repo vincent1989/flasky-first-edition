@@ -10,7 +10,10 @@ from flask.ext.script import Manager
 from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 
-from flask.ext.wtf import Form
+# 注意 书中介绍使用下面这行导入包，但是实际运行过程中发现该包已经更换了名字，更换成FlaskForm,特此说明
+# from flask.ext.wtf import Form
+from flask.ext.wtf import FlaskForm
+
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 
@@ -28,7 +31,7 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 
 
-class NameForm(Form):
+class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[Required()])
     # 注意，验证函数 Required() 可以验证数据不为空
     submit = SubmitField('Submit')
