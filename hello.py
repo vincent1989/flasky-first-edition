@@ -9,8 +9,10 @@ from flask import url_for
 from flask import flash
 from flask import abort
 from flask.ext.script import Manager
+from flask.ext.script import Shell
 from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
+from flask.ext.migrate import Migrate, MigrateCommand
 
 # 注意 书中介绍使用下面这行导入包，但是实际运行过程中发现该包已经更换了名字，更换成FlaskForm,特此说明
 # from flask.ext.wtf import Form
@@ -41,13 +43,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# 通过命令行方式管理 app
-manager = Manager(app)
 # 添加 Bootstrap
 bootstrap = Bootstrap(app)
 
 # 添加 Moment
 moment = Moment(app)
+
+# 通过命令行方式管理 app
+manager = Manager(app)
+
+# 数据库迁移
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
+
+
+def make_shell_context():
+    # 注册程序，数据库实例以及模型，便于直接导入shell
+    return dict(app=app, db=db, User=User, Role=Role)
+manager.add_command("shell", Shell(make_context=make_shell_context))
 
 
 class Role(db.Model):
