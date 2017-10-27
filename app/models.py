@@ -1,22 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
-from flask import Flask
-from flask.ext.migrate import Migrate, MigrateCommand
+
 # 导入数据库ORM
 from flask.ext.sqlalchemy import SQLAlchemy
-app = Flask(__name__)
-
-db = SQLAlchemy(app)
-
-
-# 数据库迁移
-migrate = Migrate(app, db)
-
-
-def make_shell_context():
-    # 注册程序，数据库实例以及模型，便于直接导入shell
-    return dict(app=app, db=db, User=User, Role=Role)
-
+db = SQLAlchemy()
 
 class Role(db.Model):
     __tablename__ = 'roles'
