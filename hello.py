@@ -52,7 +52,6 @@ app.config['MAIL_PASSWORD'] = os.environ.get('TEST_MAIL_PASSWORD')
 app.config['FLASKY_ADMIN'] = os.environ.get('TEST_FLASK_ADMIN')
 
 app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
-# app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
 app.config['FLASKY_MAIL_SENDER'] = 'LWC<lwc@jiagouyun.com>'
 mail = Mail(app)
 
