@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-
+from threading import Thread
 from flask import Flask
 from flask import render_template
 from flask import session
@@ -13,6 +13,7 @@ from flask.ext.script import Shell
 from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from flask.ext.migrate import Migrate, MigrateCommand
+from flask.ext.mail import Mail, Message
 
 # 注意 书中介绍使用下面这行导入包，但是实际运行过程中发现该包已经更换了名字，更换成FlaskForm,特此说明
 # from flask.ext.wtf import Form
@@ -40,6 +41,21 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
 # sqlalchemy_track_modifications增加了很大的开销，将由未来的默认禁用。将其设置为真或假以禁止此警告。“sqlalchemy_track_modifications增加了很大的开销，
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+# 设置邮件服务
+app.config['MAIL_SERVER'] = 'smtp.mxhichina.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('TEST_MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('TEST_MAIL_PASSWORD')
+app.config['FLASKY_ADMIN'] = os.environ.get('TEST_FLASK_ADMIN')
+
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+# app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
+app.config['FLASKY_MAIL_SENDER'] = 'LWC<lwc@jiagouyun.com>'
+mail = Mail(app)
+
 
 db = SQLAlchemy(app)
 
@@ -98,7 +114,19 @@ class NameForm(FlaskForm):
     # 注意，验证函数 DataRequired() 可以验证数据不为空
     submit = SubmitField('Submit')
 
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
 
+def send_mail(to, subject, template, **kwargs):
+    msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
+                  sender=app.config['FLASKY_MAIL_SENDER'],
+                  recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
 
 
 @app.errorhandler(404)
@@ -118,6 +146,11 @@ def index():
             user = User(username=form.name.data)
             db.session.add(user)
             session['know'] = False
+            if app.config['FLASKY_ADMIN']:
+                send_mail(app.config['FLASKY_ADMIN'],
+                          'New User',
+                          'mail/new_user',
+                          user=user)
         else:
             session['know'] = True
             # flash('Looks like you have changed your name!')
