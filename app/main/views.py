@@ -18,7 +18,7 @@ def index():
     form=NameForm()
     if form.validate_on_submit():
         print form.name.data
-        user = User.query.filter_by(username=form.name.data).first()
+        user = User.query.filter_by(username=form.name.data).all()
         print user
         if user is not None:
             session['name'] = form.name.data
