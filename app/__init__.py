@@ -7,8 +7,18 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from flask.ext.mail import Mail, Message
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.login import LoginManager
 
 from config import config
+
+# 实例化一个LoginManager实例
+login_manager = LoginManager()
+# 设置登录的 会话保护，session_protection 可选值：None 不保护, basic 基本级别, strong 强级别
+# 当 session_protection 设置为 strong 时 FLask-Login 会记录客户端IP地址和浏览器的用户代理信息，如果发现异动就登出用户
+login_manager.session_protection = 'strong'
+# 设置登录页面的端点
+login_manager.login_view = 'auth.login'
+
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -24,6 +34,7 @@ def create_app(config_name):
     mail.init_app(app)
     moment.init_app(app)
     db.init_app(app)
+    login_manager.init_app(app)
 
     # 注册蓝本 main
     from .main import main as main_blueprint
