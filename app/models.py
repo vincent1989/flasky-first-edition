@@ -3,6 +3,7 @@ import os
 
 # 导入数据库ORM
 from flask.ext.sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 db = SQLAlchemy()
 
 class Role(db.Model):
@@ -31,7 +32,22 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # unique 设置列值不允许重复; index 为该列创建索引，以便提升查询效率
     username = db.Column(db.String(64), unique=True, index=True)
-    # password = db.Column(db.String(64))
+    # 密码hash值
+    password_hash = db.Column(db.String(128))
+
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
     def __repr__(self):
         return '<User %r>' % self.username
+
+    @property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_passowrd(self, password):
+        return check_password_hash(self.password_hash, password)
+

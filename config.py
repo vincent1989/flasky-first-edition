@@ -38,6 +38,7 @@ class DevelopmentConfig(Config):
     MAIL_USERNAME = os.environ.get('DEV_MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('DEV_MAIL_PASSWORD')
     # 数据库URL
+    # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 
 
