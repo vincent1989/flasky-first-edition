@@ -4,7 +4,6 @@ __author__ = 'vincent'
 
 import os
 import sys
-
 from app import create_app, db
 from app.models import Role, User
 from flask_script import Manager, Shell

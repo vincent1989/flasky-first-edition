@@ -21,9 +21,7 @@ sys.setdefaultencoding("utf-8")
 def index():
     form=NameForm()
     if form.validate_on_submit():
-        print form.name.data
         user = User.query.filter_by(username=form.name.data).first()
-        print user
         if user is not None:
             session['name'] = form.name.data
             return redirect(url_for('.index',

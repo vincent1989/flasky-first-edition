@@ -29,6 +29,16 @@ class Config:
     FLASKY_MAIL_SENDER = os.environ.get('FLASKY_MAIL_SENDER')
     # 管理员邮箱
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    # 分页中，每页默认现实的条目数量
+    FLASKY_POSTS_PER_PAGE = 20
+
+    # 每页的 关注着 数量
+    FLASKY_FOLLOWERS_PER_PAGE = 50
+    # 每页的 评论信息 数量
+    FLASKY_COMMENTS_PER_PAGE = 30
+    #
+    FLASKY_SLOW_DB_QUERY_TIME = 0.5
+
 
     @staticmethod
     def init_app(app):
@@ -50,6 +60,10 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     # 数据库URL
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+
+
+
+
 
 config = {
     'development' : DevelopmentConfig,
