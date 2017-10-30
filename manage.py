@@ -6,6 +6,9 @@ import os
 import sys
 from app import create_app, db
 from app.models import Role, User
+
+# 注意此处导入外部包时会有一个坑点儿，例如使用 from flask.ext.xxxx as xxxxxx 时，启动服务后会打出一堆的包导入记录，改成 from flask_xx 就可以了
+# 例如: from flask.ext.script import Manager, Shell 改为 下面这一行就不会显示一堆 包导入记录了
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 

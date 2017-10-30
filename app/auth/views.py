@@ -9,9 +9,9 @@ from flask import request
 from flask import url_for
 from flask import flash
 
-from flask.ext.login import login_required
-from flask.ext.login import login_user
-from flask.ext.login import logout_user
+from flask_login import login_required
+from flask_login import login_user
+from flask_login import logout_user
 
 from . import auth
 from ..models import User

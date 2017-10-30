@@ -7,7 +7,7 @@ from . import main
 
 # 注意 书中介绍使用下面这行导入包，但是实际运行过程中发现该包已经更换了名字，更换成FlaskForm,特此说明
 # from flask.ext.wtf import Form
-from flask.ext.wtf import FlaskForm
+from flask_wtf import FlaskForm
 
 from wtforms import StringField, SubmitField
 # 下面这一行的包处于将废弃的状态

@@ -15,7 +15,7 @@ class Config:
     # 开启自动提交
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     # 避免内存开销太大，所以禁止此项
-    # SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
 
     # 邮件服务相关
     MAIL_SERVER = 'smtp.mxhichina.com'
