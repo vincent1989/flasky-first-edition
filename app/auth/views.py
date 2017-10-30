@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'vincent'
 
+import sys
 
 from flask import render_template
 from flask import redirect
@@ -17,6 +18,9 @@ from ..models import User
 # 导入登录表单
 from .forms import LoginForm
 
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -36,7 +40,8 @@ def login():
             # 1. 用户访问未授权的URL时会显示登录表单，Flask-Login会把原地址保存在 request.args 字典的 next 中，如果查询没有 next,则跳转到首页
             return redirect(request.args.get('next') or url_for('main.index'))
         # 如果没有用户，或者密码错误，则会给用户一个flash 并重新渲染登录表单，让用户重新登录
-        flash('用户名或密码无效')
+        # flash('Invalid username or password')
+        flash('无效的用户名或密码')
     return render_template('auth/login.html', form=form)
 
 
@@ -47,6 +52,7 @@ def logout():
     # 删除并重设用户会话
     logout_user()
     # 提醒用户
+    # flash('you have been logged out')
     flash('您已登出')
     # 重定向到首页
     return redirect(url_for('main.index'))

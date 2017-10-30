@@ -18,6 +18,11 @@ class Config:
     # SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # 邮件服务相关
+    MAIL_SERVER = 'smtp.mxhichina.com'
+    MAIL_PORT = 465
+    MAIL_USE_SSL = True
+    MAIL_USERNAME = os.environ.get('DEV_MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('DEV_MAIL_PASSWORD')
     # 邮件标题 的 前缀
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     # 邮件发送者名称
@@ -32,11 +37,6 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    MAIL_SERVER = 'smtp.mxhichina.com'
-    MAIL_PORT = 465
-    MAIL_USE_SSL = True
-    MAIL_USERNAME = os.environ.get('DEV_MAIL_USERNAME')
-    MAIL_PASSWORD = os.environ.get('DEV_MAIL_PASSWORD')
     # 数据库URL
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')

@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
-
-# 导入数据库ORM
-from . import login_manager
-from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-db = SQLAlchemy()
+
+'''
+# 用户模型必须实现 82页：表8-1 所需要的四个方法，如下：
+# is_authenticated 如果用户已登录，则返回True，否则返回False
+# is_active 如果允许用户登录，则返回True，否则返回False
+# is_anonymous 对普通用户必须返回False
+# get_id 必须返回用户的唯一标示符，使用unicode 编码字符串
+可以使用 Flask-Login 提供的UserMixin类，就自动拥有以上四种方法了
+'''
+from flask_login import UserMixin
+from . import db, login_manager
+
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -27,7 +34,7 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
     # primary_key 设置为主键
     id = db.Column(db.Integer, primary_key=True)

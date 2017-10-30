@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'vincent'
 
+import sys
 from flask import render_template
 from . import main
 
@@ -12,6 +13,9 @@ from wtforms import StringField, SubmitField
 # 下面这一行的包处于将废弃的状态
 # from wtforms.validators import Required
 from wtforms.validators import DataRequired
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'vincent'
 
+import sys
 from datetime import datetime
 from flask import render_template
 from flask import session
@@ -12,6 +13,9 @@ from . import main
 from .forms import NameForm
 from .. import db
 from ..models import User
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 @main.route('/', methods=['GET', 'POST'])
 def index():

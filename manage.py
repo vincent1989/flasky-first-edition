@@ -3,11 +3,15 @@
 __author__ = 'vincent'
 
 import os
+import sys
 
 from app import create_app, db
 from app.models import Role, User
-from flask.ext.script import Manager, Shell
-from flask.ext.migrate import Migrate, MigrateCommand
+from flask_script import Manager, Shell
+from flask_migrate import Migrate, MigrateCommand
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 app = create_app(os.getenv('FLASKY_CONFIG') or 'default')
 # 加载一些命令行工具包
