@@ -17,10 +17,24 @@ from . import auth
 from ..models import User
 # 导入登录表单
 from .forms import LoginForm
+from .forms import RegistrationForm
+from .. import db
 
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
+
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data,
+                    username=form.username.data,
+                    password=form.password.data)
+        db.session.add(user)
+        flash('您现在可以登录了')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/register.html', form=form)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
