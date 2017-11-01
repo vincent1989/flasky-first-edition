@@ -2,6 +2,7 @@
 __author__ = 'vincent'
 
 import unittest
+import time
 from flask import current_app
 from app import create_app, db
 from app.models import User
@@ -62,3 +63,65 @@ class UserModelTestCase(unittest.TestCase):
         u=User(password='cat')
         u2=User(password='cat')
         self.assertTrue(u.password_hash != u2.password_hash)
+
+    def test_vaild_confirmation_token(self):
+        '''
+        测试用户令牌生成函数，验证2个令牌之间是否相同
+        '''
+        u=User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_confirmation_token()
+        self.assertTrue(u.confirm(token))
+
+    def test_confirmation_token_is_ramdom(self):
+        '''
+        测试用户令牌是随机的
+        '''
+        u=User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        t1 = time.time()
+        token1 = u.generate_confirmation_token()
+        t2 = time.time()
+        token2 = u.generate_confirmation_token()
+        time.sleep(1)
+        t3 = time.time()
+        token3 = u.generate_confirmation_token()
+        time.sleep(2)
+        t4 = time.time()
+        token4 = u.generate_confirmation_token()
+
+        # 同一时间戳下，token 相同
+        self.assertTrue(token1 == token2)
+        # 间隔
+        self.assertTrue(token2 != token3)
+        self.assertTrue(token3 != token4)
+
+
+    def test_invalid_confirmation_token(self):
+        '''
+        测试 2个用户之间交换令牌 是无法验证通过的
+        '''
+        u=User(password='cat')
+        u2=User(password='cat')
+        db.session.add(u, u2)
+        db.session.commit()
+
+        token = u.generate_confirmation_token()
+        token2 = u2.generate_confirmation_token()
+        self.assertFalse(u.confirm(token2))
+        self.assertFalse(u2.confirm(token))
+
+
+    def test_expired_confirmation_token(self):
+        '''
+        验证用户令牌过期时间
+        '''
+        u=User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+
+        token = u.generate_confirmation_token(expiration=2)
+        time.sleep(3)
+        self.assertFalse(u.confirm(token))
