@@ -25,6 +25,7 @@ from .forms import RegistrationForm
 from .forms import ChangePasswordForm
 from .forms import PasswordResetForm
 from .forms import PasswordResetRequestForm
+from .forms import ChangeEmailForm
 from .. import db
 from ..email import send_mail
 
@@ -114,7 +115,7 @@ def login():
         # 根据用户填写的邮箱名获取用户对象
         user = User.query.filter_by(email=form.email.data).first()
         # 用户对象不为空，且密码验证通过
-        if user is not None and user.verify_passowrd(form.password.data):
+        if user is not None and user.verify_password(form.password.data):
             # login_user 标记用户已登录;
             # 如果remember 为Flase，则关闭浏览器之后，用户会话就会过期，下次用户访问时就需要重新登录
             # 如果remember 为True，则会在用户浏览器中写入一个长期的有效的cookit，使用这个cookit 可以复现用户回话
@@ -157,7 +158,7 @@ def change_password():
     '''
     form = ChangePasswordForm()
     if form.validate_on_submit():
-        if current_user.verify_passowrd(form.old_password.data):
+        if current_user.verify_password(form.old_password.data):
             current_user.password = form.password.data
             db.session.add(current_user)
             flash('您的密码修改成功')
@@ -210,4 +211,41 @@ def password_reset(token):
         else:
             return redirect(url_for('main.index'))
     return render_template('auth/reset_password.html', form=form)
+
+
+@auth.route('/change-email', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    '''
+    已登陆用户 发送密码修改的 token
+    '''
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.password.data):
+            new_email = form.email.data
+            token = current_user.generate_email_change_token(new_email)
+            send_mail(new_email,
+                      '邮箱地址验证通知',
+                      'auth/email/change_email',
+                      user=current_user,
+                      token=token)
+            flash('一封邮箱地址验证邮件已发送到你的新邮箱中，请前往确认！')
+            return redirect(url_for('main.index'))
+        else:
+            flash('无效的邮箱或密码')
+    return render_template('auth/change_email.html', form=form)
+
+
+@auth.route('/change-email/<token>')
+@login_required
+def change_email(token):
+    '''
+    已登陆用户 密码修改
+    '''
+    if current_user.change_email(token):
+        flash('您的邮件地址已更新')
+    else:
+        flash('无效的请求')
+    return redirect(url_for('main.index'))
+
 

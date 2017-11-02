@@ -52,8 +52,8 @@ class UserModelTestCase(unittest.TestCase):
         验证 密码验证函数是否正确
         '''
         u = User(password='cat')
-        self.assertTrue(u.verify_passowrd('cat'))
-        self.assertFalse(u.verify_passowrd('dog'))
+        self.assertTrue(u.verify_password('cat'))
+        self.assertFalse(u.verify_password('dog'))
 
 
     def test_password_salts_are_random(self):

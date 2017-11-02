@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
     def password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    def verify_passowrd(self, password):
+    def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
     def generate_confirmation_token(self, expiration=3600):
@@ -112,6 +112,37 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
+    def generate_email_change_token(self, new_email, expiration=3600):
+        '''
+        获取邮件重置时的 token
+        '''
+        s=Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'change_email':self.id, 'new_email': new_email})
+
+    def change_email(self, token):
+        '''
+        重置密码，重置前验证token
+        '''
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+
+        if data.get('change_email') !=self.id:
+            return False
+
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+
+        if self.query.filter_by(email=new_email).first() is not None:
+            # 新邮件在 用户列表中应当不存在，否则返回False
+            return False
+
+        self.email = new_email
+        db.session.add(self)
+        return True
 
 @login_manager.user_loader
 def load_user(user_id):

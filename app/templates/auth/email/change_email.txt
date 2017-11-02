@@ -1,0 +1,10 @@
+Dear {{ user.username }},
+
+Welcome to Flasky
+
+您正在进行修改邮件地址操作，请点击如下链接进行密码重置：
+{{ url_for('auth.change_email', token=token, _external=True) }}
+
+Sincerely,
+The Flasky Team
+Note: replies to this email address are not monitored
