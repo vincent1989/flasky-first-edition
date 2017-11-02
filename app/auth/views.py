@@ -22,6 +22,7 @@ from ..models import User
 # 导入登录表单
 from .forms import LoginForm
 from .forms import RegistrationForm
+from .forms import ChangePasswordForm
 from .. import db
 from ..email import send_mail
 
@@ -145,3 +146,17 @@ def secret():
     # 未登录的用户，将被 Flask-Login 拦截，然后显示本方法的提示，并把用户发往登录页面
     return 'Only authenticated users are allowed!'
 
+
+@auth.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if current_user.verify_passowrd(form.old_password.data):
+            current_user.password = form.password.data
+            db.session.add(current_user)
+            flash('您的密码修改成功')
+            return redirect(url_for('main.index'))
+        else:
+            flash('密码无效')
+    return render_template('auth/change_password.html', form=form)
