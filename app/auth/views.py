@@ -9,9 +9,13 @@ from flask import request
 from flask import url_for
 from flask import flash
 
+'''
+注意 Flask-Login 提供的 login_required 方法修饰器能够保护可以保护路由， 执行被修饰的方法时会先验证用户有没有登录。
+'''
 from flask_login import login_required
 from flask_login import login_user
 from flask_login import logout_user
+from flask_login import current_user
 
 from . import auth
 from ..models import User
@@ -19,10 +23,67 @@ from ..models import User
 from .forms import LoginForm
 from .forms import RegistrationForm
 from .. import db
+from ..email import send_mail
 
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
+
+
+@auth.before_app_request
+def beform_request():
+    '''
+    功能：在 before_app_request 处理程序中 过滤未确认的账户
+    满足以下三个条件时，before_app_request 程序会拦截请求
+    1. 用户已登录 （current_user.is_authenticated 返回 True）
+    2. 用户账户还没有确认
+    3. 请求的端点 （使用request.endpoint获取）不在认证蓝本中。
+    访问认证路由要获取权限，因为这些路由的作用就是要用户确认账户或者执行其他账户相关操作
+
+    如果请求满足以上三条，则会被重定向到 /auth/unconfirmed 路由，显示一个确认账户相关信息的页面
+    '''
+    if (current_user.is_authenticated
+        and not current_user.confirmed
+        and request.endpoint[:5] != 'auth.'
+        and request.endpoint != 'static'):
+        return redirect(url_for('auth.unconfirmed'))
+
+@auth.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymous or current_user.confirmed:
+        return redirect(url_for('main.index'))
+    return render_template('auth/unconfirmed.html')
+
+
+
+@auth.route('/confirm/<token>', methods=['GET', 'POST'])
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('main.index'))
+
+    if current_user.confirm(token):
+        flash('您的邮箱验证成功，非常感谢')
+    else:
+        flash('当前连接已失效，验证失败')
+    return redirect(url_for('main.index'))
+
+
+@auth.route('/confirm')
+@login_required
+def resend_confirmation():
+    '''
+    为已登陆用户 重新发送账户确认邮件
+    '''
+    token = current_user.generate_confirmation_token()
+    send_mail(current_user.email,
+              '确认您的账户',
+              'auth/email/confirm',
+              user=current_user,
+              token=token)
+    flash('一个新的账户确认邮件已发送到您的邮箱，请前往确认.')
+    return redirect(url_for('main.index'))
+
 
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
@@ -32,7 +93,12 @@ def register():
                     username=form.username.data,
                     password=form.password.data)
         db.session.add(user)
-        flash('您现在可以登录了')
+        db.session.commit()
+        # 获取用户令牌
+        token = user.generate_confirmation_token()
+        # 发送邮件
+        send_mail(user.email, '请确认您的帐号', 'auth/email/confirm', user=user, token=token)
+        flash('一个帐号确认邮件已发到您的邮箱，请前往确认')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form)
 
@@ -78,3 +144,4 @@ def logout():
 def secret():
     # 未登录的用户，将被 Flask-Login 拦截，然后显示本方法的提示，并把用户发往登录页面
     return 'Only authenticated users are allowed!'
+

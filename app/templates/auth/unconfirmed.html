@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %} Flasky - Confirm your account{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>
+            Hello, {{ current_user.username }}
+        </h1>
+        <h3>
+            您尚未确认您的账户
+        </h3>
+        <p>
+            在访问此站点前，您需要确认您的账户。
+            请检查您的邮箱，您应该回收到一个带有链接的确认邮件。
+        </p>
+        <p>
+            如果需要确认这个邮箱，<a href="{{ url_for('auth.resend_confirmation') }}"> 请点击我 </a>
+        </p>
+    </div>
+
+{% endblock %}
