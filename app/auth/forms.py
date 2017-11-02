@@ -20,12 +20,13 @@ reload(sys)
 sys.setdefaultencoding("utf-8")
 
 
-class ChangePasswordForm(FlaskForm):
-    # 修改密码
-    old_password = PasswordField('Old Password', validators=[DataRequired()])
-    password = PasswordField('New Password', validators=[DataRequired(), EqualTo('password2', message='密码必须匹配')])
-    password2 = PasswordField('Confirm New Password', validators=[DataRequired()])
-    submit = SubmitField('Update Password')
+class LoginForm(FlaskForm):
+    # email 字段验证：必填验证，长度范围1-64， 邮件格式验证
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64), Email()])
+
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Keep me logged in')
+    submit = SubmitField('Log In')
 
 
 class RegistrationForm(FlaskForm):
@@ -50,12 +51,33 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('当前用户名已注册过')
 
 
-    
+class ChangePasswordForm(FlaskForm):
+    '''
+    已登陆情况下的 用户修改密码
+    '''
+    old_password = PasswordField('Old Password', validators=[DataRequired()])
+    password = PasswordField('New Password', validators=[DataRequired(), EqualTo('password2', message='密码必须匹配')])
+    password2 = PasswordField('Confirm New Password', validators=[DataRequired()])
+    submit = SubmitField('修改密码')
 
-class LoginForm(FlaskForm):
-    # email 字段验证：必填验证，长度范围1-64， 邮件格式验证
+
+class PasswordResetRequestForm(FlaskForm):
+    '''
+    未登录情况下  用户修改密码前向注册邮箱发送密码重置邮件
+    '''
     email = StringField('Email', validators=[DataRequired(), Length(1, 64), Email()])
+    submit = SubmitField('重设密码')
 
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Keep me logged in')
-    submit = SubmitField('Log In')
+
+class PasswordResetForm(FlaskForm):
+    '''
+    未登录情况下  用户通过密码修改验证邮件进入的 密码修改表单
+    '''
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64), Email()])
+    password = PasswordField('New Password', validators=[DataRequired(), EqualTo('password2', message='密码必须匹配')])
+    password2 = PasswordField('Confirm Password', validators=[DataRequired()])
+    submit = SubmitField('重设密码')
+
+    def validate_email(self, field):
+        if User.query.filter_by(email=field.data).first() is None:
+            raise ValidationError('未知的邮箱地址')
