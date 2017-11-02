@@ -32,42 +32,31 @@ class UserModelTestCase(unittest.TestCase):
 
 
     def test_password_setter(self):
-        '''
-        测试，用户米密码设置不为空
-        '''
+        '''测试用户密码属性，密码存储的hash值不为空'''
         u=User(password='cat')
         self.assertTrue(u.password_hash is not None)
 
     def  test_no_password_getter(self):
-        '''
-        测试 用户的密码属性 不可读验证
-        :return:
-        '''
+        '''测试用户的密码属性 不可读验证'''
         u=User(password='cat')
         with self.assertRaises(AttributeError):
             u.password
 
     def test_password_verification(self):
-        '''
-        验证 密码验证函数是否正确
-        '''
+        '''测试密码验证函数准确性'''
         u = User(password='cat')
         self.assertTrue(u.verify_password('cat'))
         self.assertFalse(u.verify_password('dog'))
 
 
     def test_password_salts_are_random(self):
-        '''
-        验证不同用户，相同密码时，密码的hash是不同的
-        '''
+        '''测试不同用户相同密码所生成的密码hash不同验证'''
         u=User(password='cat')
         u2=User(password='cat')
         self.assertTrue(u.password_hash != u2.password_hash)
 
     def test_vaild_confirmation_token(self):
-        '''
-        测试用户令牌生成函数，验证2个令牌之间是否相同
-        '''
+        '''测试用户令牌验证函数有效性'''
         u=User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -75,9 +64,7 @@ class UserModelTestCase(unittest.TestCase):
         self.assertTrue(u.confirm(token))
 
     def test_confirmation_token_is_ramdom(self):
-        '''
-        测试用户令牌是随机的
-        '''
+        '''测试用户令牌随机性，及与时间戳的关联性'''
         u=User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -100,9 +87,7 @@ class UserModelTestCase(unittest.TestCase):
 
 
     def test_invalid_confirmation_token(self):
-        '''
-        测试 2个用户之间交换令牌 是无法验证通过的
-        '''
+        '''测试 2个用户之间交换令牌 是无法验证通过的'''
         u=User(password='cat')
         u2=User(password='cat')
         db.session.add(u, u2)
@@ -115,9 +100,7 @@ class UserModelTestCase(unittest.TestCase):
 
 
     def test_expired_confirmation_token(self):
-        '''
-        验证用户令牌过期时间
-        '''
+        '''验证用户令牌过期时间设置有效性'''
         u=User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -125,3 +108,62 @@ class UserModelTestCase(unittest.TestCase):
         token = u.generate_confirmation_token(expiration=2)
         time.sleep(3)
         self.assertFalse(u.confirm(token))
+
+    def test_valid_reset_token(self):
+        '''验证重置操作的 token'''
+        u=User(password='abcde')
+        db.session.add(u)
+        db.session.commit()
+
+        self.assertTrue(u.verify_password('abcde'))
+
+        # 获取 重置所需的 token
+        token = u.generate_reset_token(expiration=3)
+        self.assertTrue(u.reset_password(token, 'cat'))
+        self.assertTrue(u.verify_password('cat'))
+        time.sleep(4)
+        self.assertFalse(u.reset_password(token, 'cat123'))
+
+    def test_invalid_reset_token(self):
+        '''验证多用户token交互使用并设置密码情况下的情况'''
+        u1 = User(password='cat')
+        u2 = User(password='dog')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        token = u1.generate_reset_token()
+        self.assertFalse(u2.reset_password(token, 'horse'))
+        self.assertTrue(u2.verify_password('dog'))
+
+
+    def test_valid_email_change_token(self):
+        '''验证邮件地址重置token'''
+        u1 = User(username='cat', password='cat', email='cat@qq.com')
+        u2 = User(username='dog', password='dog', email='dog@qq.com')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        # 生成对应用户的 邮件地址变更 token
+        token1 = u1.generate_email_change_token('new_cat@qq.com')
+        token2 = u2.generate_email_change_token('new_dog@qq.com')
+
+        # 验证其他用户token
+        self.assertFalse(u1.change_email(token2))
+        # 验证自己的 token
+        self.assertTrue(u1.change_email(token1))
+        self.assertTrue(u1.email == 'new_cat@qq.com')
+
+
+    def test_duplicate_email_change_token(self):
+        '''测试重复的电子邮件地址'''
+        u1 = User(username='cat', password='cat', email='cat@sina.com')
+        u2 = User(username='dog', password='dog', email='dog@sina.com')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        # 生成对应用户的 邮件地址变更 token
+        token1 = u1.generate_email_change_token('dog@sina.com')
+        # 验证其他用户token
+        self.assertFalse(u1.change_email(token1))
+        self.assertTrue(u2.email == 'dog@sina.com')
+        self.assertTrue(u1.email == 'cat@sina.com')
