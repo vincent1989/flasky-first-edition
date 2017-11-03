@@ -37,7 +37,8 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
-    permisions = db.Column(db.Integer)
+    # permisions = db.Column(db.Integer)
+    permissions = db.Column(db.Integer)
     '''
     注意，如果users 不添加 lazy='dynamic'，则执行 user_role.users 会直接执行隐藏的query 方法
     >>> from hello import Role, User
@@ -72,7 +73,7 @@ class Role(db.Model):
             role = Role.query.filter_by(name=r).first()
             if role is None:
                 role = Role(name=r)
-            role.permisions = roles[r][0]
+            role.permissions = roles[r][0]
             role.default = roles[r][1]
             db.session.add(role)
         db.session.commit()
@@ -213,7 +214,7 @@ class User(UserMixin, db.Model):
 
     def can(self, permissions):
         '''通过俺位计算判断给定权限位与用户实际权限位是否为符合, 即判断用户是否允许后续操作'''
-        return self.role is not None and (self.role.permisions & permissions) == permissions
+        return self.role is not None and (self.role.permissions & permissions) == permissions
 
     def is_administrator(self):
         '''判断是否为管理员'''
