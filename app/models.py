@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import hashlib
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 '''
@@ -16,6 +17,7 @@ from flask_login import AnonymousUserMixin
 # 下面这个包 itsdangerous 用于生成确认令牌
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
+from flask import request
 
 from . import db, login_manager
 
@@ -109,6 +111,9 @@ class User(UserMixin, db.Model):
     # 注意 datetime.utcnow 后面没有()，因为db.Column() 的default参数可以接收函数作为默认值。
     # 所以每次需要生成默认值时，db.Column()都会调用制定的函数，member_since只需要默认值即可
 
+    # 存储用户邮件头像的hash值
+    avatar_hash = db.Column(db.String(32))
+
 
 
     def __repr__(self):
@@ -123,6 +128,10 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+            # 邮件头像hash值
+            if self.email is not None and self.avatar_hash is None:
+                self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+
 
 
     @property
@@ -208,6 +217,8 @@ class User(UserMixin, db.Model):
             return False
 
         self.email = new_email
+        # 更新邮件头像的hash值
+        self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
         db.session.add(self)
         return True
 
@@ -224,6 +235,22 @@ class User(UserMixin, db.Model):
         '''更新用户的最后一次访问时间'''
         self.last_seen = datetime.utcnow()
         db.session.add(self)
+
+
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+        else:
+            url = 'https://www.gravatar.com/avatar'
+
+        hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url,
+            hash=hash,
+            size=size,
+            default=default,
+            rating=rating
+        )
 
 
 class AnonymousUser(AnonymousUserMixin):
