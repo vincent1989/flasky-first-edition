@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 可以使用 Flask-Login 提供的UserMixin类，就自动拥有以上四种方法了
 '''
 from flask_login import UserMixin
+from flask_login import AnonymousUserMixin
 
 # 下面这个包 itsdangerous 用于生成确认令牌
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -17,6 +18,18 @@ from flask import current_app
 
 from . import db, login_manager
 
+class Permission:
+    '''权限常量'''
+    # 权限 关注用户
+    FOLLOW = 0x01
+    # 权限 在他人的文章中发表评论
+    COMMENT = 0x02
+    # 写文章
+    WRITE_ARTICLES = 0x04
+    # 管理他人发表的评论
+    MODERATE_COMMENTS = 0x08
+    # 管理员权限
+    ADMINISTER = 0x80
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -40,6 +53,30 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
+
+    @staticmethod
+    def insert_roles():
+        roles = {
+            'User' : (Permission.FOLLOW |
+                      Permission.COMMENT|
+                      Permission.WRITE_ARTICLES, True),
+            'Moderator' : (Permission.FOLLOW |
+                           Permission.COMMENT|
+                           Permission.WRITE_ARTICLES|
+                           Permission.MODERATE_COMMENTS, False),
+            'Administrator':(0xff, False)
+        }
+
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.permisions = roles[r][0]
+            role.default = roles[r][1]
+            db.session.add(role)
+        db.session.commit()
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     # primary_key 设置为主键
@@ -59,6 +96,17 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+    def __init__(self, **kwargs):
+        '''User类的构造函首先调用基类的构造函数，如果创建基类对象后还没有自定义角色，
+        则根据注册邮件是否为管理员邮件来决定是否将其设为管理员或默认角色'''
+        super(User, self).__init__(**kwargs)
+        if self.role is None:
+            if self.email == current_app.config['FLASKY_ADMIN']:
+                self.role = Role.query.filter_by(permissions=0xff).first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
+
 
     @property
     def password(self):
@@ -145,6 +193,29 @@ class User(UserMixin, db.Model):
         self.email = new_email
         db.session.add(self)
         return True
+
+
+    def can(self, permissions):
+        '''通过俺位计算判断给定权限位与用户实际权限位是否为符合, 即判断用户是否允许后续操作'''
+        return self.role is not None and (self.role.permisions & permissions) == permissions
+
+    def is_administrator(self):
+        '''判断是否为管理员'''
+        return self.can(Permission.ADMINISTER)
+
+
+class AnonymousUser(AnonymousUserMixin):
+    '''处于一致性考虑，专门定义此类实现 未登录用户的 can() 和 is_administrator() 方法。
+    这个对象继承自Flask-Login中的AnonymousUserMixin类，并将其设置为用户未登录时 current_user的值
+    这样程序就不用先检查用户是否登录，就能自动调用 current_user.can() 和 current_user.is_administrator()'''
+    def can(self, permissions):
+        return False
+
+    def is_administrator(self):
+        return False
+
+login_manager.anonymous_user = AnonymousUser
+
 
 @login_manager.user_loader
 def load_user(user_id):

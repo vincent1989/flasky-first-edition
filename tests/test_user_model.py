@@ -6,6 +6,9 @@ import time
 from flask import current_app
 from app import create_app, db
 from app.models import User
+from app.models import Role
+from app.models import Permission
+from app.models import AnonymousUser
 
 class UserModelTestCase(unittest.TestCase):
 
@@ -167,3 +170,18 @@ class UserModelTestCase(unittest.TestCase):
         self.assertFalse(u1.change_email(token1))
         self.assertTrue(u2.email == 'dog@sina.com')
         self.assertTrue(u1.email == 'cat@sina.com')
+
+    def test_user_role_and_permissions(self):
+        '''测试用户的角色及权限'''
+        Role.insert_roles()
+        u1=User(username='dog01', password='dog01', email='dog01@qq.com')
+        self.assertTrue(u1.can(Permission.FOLLOW))
+        self.assertTrue(u1.can(Permission.COMMENT))
+        self.assertTrue(u1.can(Permission.WRITE_ARTICLES))
+        self.assertFalse(u1.can(Permission.MODERATE_COMMENTS))
+
+    def test_anonymous_user_role_and_permissions(self):
+        '''测试匿名用户的权限和角色'''
+        u = AnonymousUser()
+        self.assertFalse(u.can(Permission.FOLLOW))
+        self.assertFalse(u.can(Permission.MODERATE_COMMENTS))
