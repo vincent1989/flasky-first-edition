@@ -7,6 +7,8 @@ from flask import render_template
 from flask import session
 from flask import redirect
 from flask import url_for
+from flask import abort
+
 
 
 from . import main
@@ -35,3 +37,10 @@ def index():
                                know=session.get('know', False),
                                current_time=datetime.utcnow())
 
+
+@main.route('/user/<username>', methods=['GET', 'POST'])
+def user(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        abort(404)
+    render_template('user.html', user=user)

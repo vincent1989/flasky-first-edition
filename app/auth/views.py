@@ -35,7 +35,7 @@ sys.setdefaultencoding("utf-8")
 
 
 @auth.before_app_request
-def beform_request():
+def before_request():
     '''
     功能：在 before_app_request 处理程序中 过滤未确认的账户
     满足以下三个条件时，before_app_request 程序会拦截请求
@@ -46,11 +46,15 @@ def beform_request():
 
     如果请求满足以上三条，则会被重定向到 /auth/unconfirmed 路由，显示一个确认账户相关信息的页面
     '''
-    if (current_user.is_authenticated
-        and not current_user.confirmed
-        and request.endpoint[:5] != 'auth.'
-        and request.endpoint != 'static'):
-        return redirect(url_for('auth.unconfirmed'))
+    if current_user.is_authenticated:
+        # 如果用户已经登录，则更新用户的最后访问时间
+        current_user.ping()
+
+        if (not current_user.confirmed
+            and request.endpoint
+            and request.endpoint[:5] != 'auth.'
+            and request.endpoint != 'static'):
+            return redirect(url_for('auth.unconfirmed'))
 
 @auth.route('/unconfirmed')
 def unconfirmed():

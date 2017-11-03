@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 '''
 # 用户模型必须实现 82页：表8-1 所需要的四个方法，如下：
@@ -92,6 +93,21 @@ class User(UserMixin, db.Model):
 
     # 用于用户确认验证
     confirmed = db.Column(db.Boolean, default=False)
+
+
+    # 用户真实姓名
+    name = db.Column(db.String(64))
+    # 所在地
+    location = db.Column(db.String(64))
+    # 自我介绍
+    about_me = db.Column(db.Text())
+    # 注册日期
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    # 最后访问日期
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    # 注意 datetime.utcnow 后面没有()，因为db.Column() 的default参数可以接收函数作为默认值。
+    # 所以每次需要生成默认值时，db.Column()都会调用制定的函数，member_since只需要默认值即可
+
 
 
     def __repr__(self):
@@ -202,6 +218,11 @@ class User(UserMixin, db.Model):
     def is_administrator(self):
         '''判断是否为管理员'''
         return self.can(Permission.ADMINISTER)
+
+    def ping(self):
+        '''更新用户的最后一次访问时间'''
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
 
 
 class AnonymousUser(AnonymousUserMixin):
