@@ -22,8 +22,8 @@ class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    # default = db.Column(db.Boolean, default=False, index=True)
-    # permisions = db.Column(db.Integer)
+    default = db.Column(db.Boolean, default=False, index=True)
+    permisions = db.Column(db.Integer)
     '''
     注意，如果users 不添加 lazy='dynamic'，则执行 user_role.users 会直接执行隐藏的query 方法
     >>> from hello import Role, User
