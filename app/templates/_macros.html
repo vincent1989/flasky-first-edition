@@ -4,7 +4,7 @@
     <li {% if not pagination.has_prev %} class="disabled" {% endif %} >
         <a href="{% if pagination.has_prev %}
                         {{ url_for(endpoint,
-                                   page=pagination.page - 1,
+                                   page=pagination.prev_num,
                                    **kwargs) }}
                  {% else %}#{% endif %}">
 
@@ -26,13 +26,14 @@
         {% else %}
             <li class="disabled"><a href="#">&hellip;</a></li>
         {% endif %}
-        <li {% if not pagination.has_next %} class="disabled" {% endif %}>
-            <a href="{% if pagination.has_next %}
-                            {{ url_for(endpoint, page=pagination.page + 1, **kwargs) }}
-                     {% else %} # {% endif %}">
-                &raquo;
-            </a>
-        </li>
     {% endfor %}
+    <li {% if not pagination.has_next %} class="disabled" {% endif %}>
+        <a href="{% if pagination.has_next %}
+                        {{ url_for(endpoint, page=pagination.next_num, **kwargs) }}
+                 {% else %} # {% endif %}">
+            &raquo;
+        </a>
+    </li>
+
 </ul>
 {% endmacro %}
