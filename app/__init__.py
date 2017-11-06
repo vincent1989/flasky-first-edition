@@ -8,6 +8,7 @@ from flask_moment import Moment
 from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_pagedown import PageDown
 
 from config import config
 
@@ -19,7 +20,7 @@ login_manager.session_protection = 'strong'
 # 设置登录页面的端点
 login_manager.login_view = 'auth.login'
 
-
+pagedown = PageDown()
 bootstrap = Bootstrap()
 mail = Mail()
 moment = Moment()
@@ -30,10 +31,17 @@ def create_app(config_name):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
+    # app 初始化 pagedown
+    pagedown.init_app(app)
+    # app 初始化 bootstrap
     bootstrap.init_app(app)
+    # app 初始化 mail
     mail.init_app(app)
+    # app 初始化 moment
     moment.init_app(app)
+    # app 初始化 db
     db.init_app(app)
+    # app 初始化 login_manager
     login_manager.init_app(app)
 
     # 注册蓝本 main

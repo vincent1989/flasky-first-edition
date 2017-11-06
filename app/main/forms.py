@@ -10,6 +10,7 @@ from . import main
 from flask_wtf import FlaskForm
 
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, BooleanField
+from flask_pagedown.fields import PageDownField
 # 下面这一行的包处于将废弃的状态
 # from wtforms.validators import Required
 from wtforms.validators import DataRequired
@@ -76,5 +77,5 @@ class EditProfileAdminForm(FlaskForm):
             raise ValidationError('用户名已被注册！')
 
 class PostForm(FlaskForm):
-    body = TextAreaField("What's on your mind?", validators=[DataRequired()])
+    body = PageDownField("What's on your mind?", validators=[DataRequired()])
     submit = SubmitField('Submit')
