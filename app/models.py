@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import hashlib
+import bleach
+from markdown import markdown
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 '''
@@ -296,6 +298,9 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     # 定义外键 author_id， 表明该列字段值是 users表中的 id 列的值
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    # body的HTML格式数据
+    body_html = db.Column(db.Text)
+
 
     @staticmethod
     def generate_fake(count=100):
@@ -311,6 +316,27 @@ class Post(db.Model):
                      author=u)
             db.session.add(p)
             db.session.commit()
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre',
+                        'strong', 'ul', 'h1', 'h2', 'h3', 'p']
+
+        # 解说：首先：markdown()函数初步将MarkDown文本转换为HTML
+        # 然后 通过 bleach 的 clean() 函数去除所有不在白名单allowed_tags中的标签。
+        # 最后 通过 bleach 的 clean() 函数将纯文本中的所有 url 转换为<a>链接。
+        # 这最后一步是很有必要的，因为MarkDown规范没有为自动生成链接提供官方支持，PageDown以扩展的形式实现了该功能
+        target.body_html = bleach.linkify(
+            bleach.clean(
+                markdown(value, output_format='html'),
+                tags=allowed_tags,
+                strip=True)
+        )
+
+# 说明：以下操作将 Post的 on_changed_body 函数注册到body字段上，是SQLAlchemy "set"事件的监听程序。
+# 这意味这只要这个类实例的body字段设了新值，on_changed_body 函数就会自动被调用
+# on_changed_body 函数把body字段中的文本渲染成 HTML 格式，结果保存在 body_html 中
+db.event.listen(Post.body, 'set', Post.on_changed_body)
 
 @login_manager.user_loader
 def load_user(user_id):

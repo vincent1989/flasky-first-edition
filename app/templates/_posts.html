@@ -13,7 +13,16 @@
                         {{ post.author.username }}
                     </a>
                 </div>
-                <div class="post-body">{{ post.body }}</div>
+                <div class="post-body">
+                    {% if post.body_html %}
+                        {#  注意渲染 HTML格式内容时 使用 | safe 后缀，其目的是告诉jinjia2 不要转义HTML元素。
+                        出于安全考虑，jinjia2 默认会转义所有模版变量。又因为 MarkDown 转换成的 HTML是在服务器端生成的，
+                        因此可以放心使用#}
+                        {{ post.body_html | safe }}
+                    {% else %}
+                        {{ post.body }}
+                    {% endif %}
+                </div>
             </div>
         </li>
     {% endfor %}
