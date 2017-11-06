@@ -14,8 +14,6 @@ from flask import current_app
 from flask_login import login_required
 from flask_login import current_user
 
-
-
 from . import main
 from .forms import NameForm
 from .forms import EditProfileForm
@@ -51,8 +49,7 @@ def index():
         per_page=current_app.config['FLASKY_POSTS_PER_PAGE'], # 表示每页展示的记录数量
         error_out=False  # 当请求页数超出范围之后，如果error_out=True,则返回404错误，否则返回一个空列表
     )
-
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    posts = pagination.items
     return render_template('index.html', form=form, posts=posts, pagination=pagination)
 
 
@@ -60,13 +57,17 @@ def index():
 @main.route('/user/<username>', methods=['GET', 'POST'])
 def user(username):
     '''用户资料页面'''
-    user = User.query.filter_by(username=username).first()
-    if user is None:
-        abort(404)
-
-    # 用户的博客文章通过User.posts 获取， User.posts 返回的是查询对象，因此可在其上添加过滤器,例如 order_by
-    posts = user.posts.order_by(Post.timestamp.desc()).all()
-    return render_template('user.html', user=user, posts=posts)
+    # 获取用户
+    user = User.query.filter_by(username=username).first_or_404()
+    # 获取页号
+    page = request.args.get('page', 1, type=int)
+    pagination = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page, # 页码
+        per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],  # 每页的显示数量
+        error_out=False  # 超出页码范围之后返回空列表
+    )
+    posts = pagination.items
+    return render_template('user.html', user=user, posts=posts, pagination=pagination)
 
 
 @main.route('/edit-profile', methods=['GET', 'POST'])

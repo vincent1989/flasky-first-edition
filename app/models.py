@@ -93,14 +93,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, index=True)
     # 密码hash值
     password_hash = db.Column(db.String(128))
-
     # 此处将 role_id 定义为外键，传递给db.ForeignKey 的参数 'roles.id' 表明：这列的值是roles表中，字段为id列的值
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-
     # 用于用户确认验证
     confirmed = db.Column(db.Boolean, default=False)
-
-
     # 用户真实姓名
     name = db.Column(db.String(64))
     # 所在地
@@ -118,8 +114,6 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     # 确定与另一张表Post的关联关系，并向Post表中插入反向引用关系属性 posts,这样post可以通过访问属性author来获取对象而不是author_id的值了
     posts = db.relationship('Post', backref='author', lazy='dynamic')
-
-
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -312,7 +306,7 @@ class Post(db.Model):
         user_count = User.query.count()
         for i in range(count):
             u = User.query.offset(randint(0, user_count-1)).first()
-            p = Post(body=forgery_py.lorem_ipsum.sentence(randint(1, 3)),
+            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1, 3)),
                      timestamp=forgery_py.date.date(True),
                      author=u)
             db.session.add(p)
