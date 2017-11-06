@@ -53,6 +53,8 @@ class Role(db.Model):
     #
     # users = db.relationship('User', backref='role')
     users = db.relationship('User', backref='role', lazy='dynamic')
+    # 上面一行代码中 db.relationship 中的参数 backref表示向User模型中添加一个role属性，从而定义反向属性。
+    # 这一属性可以替代 role_id访问Role模型，此时获取的是Role对象，而不是role_id的值
 
     def __repr__(self):
         return '<Role %r>' % self.name
@@ -92,6 +94,7 @@ class User(UserMixin, db.Model):
     # 密码hash值
     password_hash = db.Column(db.String(128))
 
+    # 此处将 role_id 定义为外键，传递给db.ForeignKey 的参数 'roles.id' 表明：这列的值是roles表中，字段为id列的值
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     # 用于用户确认验证
@@ -113,6 +116,8 @@ class User(UserMixin, db.Model):
 
     # 存储用户邮件头像的hash值
     avatar_hash = db.Column(db.String(32))
+    # 确定与另一张表Post的关联关系，并向Post表中插入反向引用关系属性 posts,这样post可以通过访问属性author来获取对象而不是author_id的值了
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
 
 
@@ -252,6 +257,30 @@ class User(UserMixin, db.Model):
             rating=rating
         )
 
+    @staticmethod
+    def generate_fake(count=100):
+        '''该方法用于生成大批量的虚拟信息'''
+        from sqlalchemy.exc import IntegrityError
+        from random import seed
+        import forgery_py
+
+        seed()
+        for i in range(count):
+            u = User(email=forgery_py.internet.email_address(),
+                     username=forgery_py.internet.user_name(),
+                     password=forgery_py.lorem_ipsum.word(),
+                     confirmed=True,
+                     name=forgery_py.name.full_name(),
+                     location=forgery_py.address.city(),
+                     about_me=forgery_py.lorem_ipsum.sentence(),
+                     member_since=forgery_py.date.date(True))
+            db.session.add(u)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
+
 
 class AnonymousUser(AnonymousUserMixin):
     '''处于一致性考虑，专门定义此类实现 未登录用户的 can() 和 is_administrator() 方法。
@@ -265,6 +294,29 @@ class AnonymousUser(AnonymousUserMixin):
 
 login_manager.anonymous_user = AnonymousUser
 
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    # 定义外键 author_id， 表明该列字段值是 users表中的 id 列的值
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    @staticmethod
+    def generate_fake(count=100):
+        from random import seed, randint
+        import forgery_py
+
+        seed()
+        user_count = User.query.count()
+        for i in range(count):
+            u = User.query.offset(randint(0, user_count-1)).first()
+            p = Post(body=forgery_py.lorem_ipsum.sentence(randint(1, 3)),
+                     timestamp=forgery_py.date.date(True),
+                     author=u)
+            db.session.add(p)
+            db.session.commit()
 
 @login_manager.user_loader
 def load_user(user_id):

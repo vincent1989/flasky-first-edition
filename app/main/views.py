@@ -9,6 +9,8 @@ from flask import redirect
 from flask import url_for
 from flask import abort
 from flask import flash
+from flask import request
+from flask import current_app
 from flask_login import login_required
 from flask_login import current_user
 
@@ -18,10 +20,13 @@ from . import main
 from .forms import NameForm
 from .forms import EditProfileForm
 from .forms import EditProfileAdminForm
+from .forms import PostForm
 
 from .. import db
 from ..models import User
 from ..models import Role
+from ..models import Post
+from ..decorators import Permission
 from ..decorators import admin_required
 
 
@@ -30,21 +35,26 @@ sys.setdefaultencoding("utf-8")
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    form=NameForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is not None:
-            session['name'] = form.name.data
-            return redirect(url_for('.index',
-                                    current_time=datetime.utcnow(),
-                                    know=True,
-                                    name=user.username))
+    form=PostForm()
+    # 判断有没有博文的编辑权限
+    if (current_user.can(Permission.WRITE_ARTICLES)
+        and form.validate_on_submit()):
+        # current_user 的 _get_current_object() 方法是有 Flask-Login提供的，它包含真正的用户对象
+        post = Post(body=form.body.data, author=current_user._get_current_object())
+        db.session.add(post)
+        return redirect(url_for('.index'))
 
-    return render_template('index.html',
-                               form=form,
-                               name=session.get('name'),
-                               know=session.get('know', False),
-                               current_time=datetime.utcnow())
+    page = request.args.get('page', 1, type=int)
+    # 注意：为显示某页中的数据，需要把all()方法替换为Flask-SQLAlchemy 提供的 paginate()方法，
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page,  # 表示页数
+        per_page=current_app.config['FLASKY_POSTS_PER_PAGE'], # 表示每页展示的记录数量
+        error_out=False  # 当请求页数超出范围之后，如果error_out=True,则返回404错误，否则返回一个空列表
+    )
+
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    return render_template('index.html', form=form, posts=posts, pagination=pagination)
+
 
 
 @main.route('/user/<username>', methods=['GET', 'POST'])
@@ -53,7 +63,10 @@ def user(username):
     user = User.query.filter_by(username=username).first()
     if user is None:
         abort(404)
-    return render_template('user.html', user=user)
+
+    # 用户的博客文章通过User.posts 获取， User.posts 返回的是查询对象，因此可在其上添加过滤器,例如 order_by
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    return render_template('user.html', user=user, posts=posts)
 
 
 @main.route('/edit-profile', methods=['GET', 'POST'])

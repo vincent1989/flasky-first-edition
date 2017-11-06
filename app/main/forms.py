@@ -75,3 +75,6 @@ class EditProfileAdminForm(FlaskForm):
             and User.query.filter_by(username=field.data).first()):
             raise ValidationError('用户名已被注册！')
 
+class PostForm(FlaskForm):
+    body = TextAreaField("What's on your mind?", validators=[DataRequired()])
+    submit = SubmitField('Submit')
