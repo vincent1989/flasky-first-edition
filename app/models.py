@@ -84,6 +84,12 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
+class Follow(db.Model):
+    '''关注关联表的模型'''
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    timestamp   = db.Column(db.DateTime, default=datetime.utcnow)
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -116,6 +122,30 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     # 确定与另一张表Post的关联关系，并向Post表中插入反向引用关系属性 posts,这样post可以通过访问属性author来获取对象而不是author_id的值了
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+
+
+    # 对 followed／followers 的说明
+    # 1. followed 和 followers 关系都被定义为单独的一对多关系
+    # 2. 为了消除外键之间的歧义，定义关系时都必须使用可选参数 foreign_keys 指定的外键
+    # 3. db.backref 参数并不是指定两个关系之间的引用，而是回引 Follow 模型。 回引中的 lazy 参数指定了 joined.
+    # lazy=joined 这个模式，可以实现立即从联结查询中加载相关对象。例如，某个用户关注了100个用户，
+    # 调用 user.followed.all() 后会返回一个列表，其中包含100个Follow实例。每一个实例的 follower 和 followed 回引属性都指向相应的用户
+    # 如果设置 lazy=select，那么首次访问 follower 和 followed 时才会加载对应的用户。而且每个属性都需要一个单独的查询，
+    # 这就意味着获取全部被关注用户时就需要增加100次额外的数据库查询
+    # 4. cascade 级联设置，指参数配置在父对象上执行的操作对相对关系的影响. 说白了就是级联操作，删除一个父对象，则父对象对应的子对象也相应全部删除（关系表中）。
+
+    # 被关注者
+    followed = db.relationship('Follow',
+                               foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
+    # 关注者
+    followers = db.relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan')
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -253,6 +283,35 @@ class User(UserMixin, db.Model):
             rating=rating
         )
 
+    def follow(self, user):
+        '''添加关注'''
+        if not self.is_following(user):
+            # 创建 关注条目信息
+            f = Follow(followed=user)
+            # 从在我的被关注者列表中添加 该条目
+            self.followed.append(f)
+
+    def unfollow(self, user):
+        '''取消关注'''
+        # 从我的被关注者列表中 获取 被关注者
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            # 从我的被关注这列表中删除对应的实例
+            self.followed.remove(f)
+
+
+    def is_following(self, user):
+        '''判断已关注某用户'''
+        # 在 自己的已关注列表中，赛选出 被关注者的 user.id; 如果存在则表示已关注，如果未存在则表示没有关注
+        # 然后根据 first() 的存在则返回实例，不存在则返回 None的特性去判断
+        return self.followed.filter_by(followed_id=user.id).first() is not None
+
+    def is_followed_by(self, user):
+        '''判断已被某一个用户关注'''
+        # 在 自己的被关注列表中，赛选出 关注我的用户ID，如果存在则表示已被该用户关注，如果未存在，则表示没有被该用户关注
+        return self.followers.filter_by(follower_id=user.id).first() is not None
+
+
     @staticmethod
     def generate_fake(count=100):
         '''该方法用于生成大批量的虚拟信息'''
@@ -275,6 +334,7 @@ class User(UserMixin, db.Model):
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
 
 
 
@@ -337,6 +397,9 @@ class Post(db.Model):
 # 这意味这只要这个类实例的body字段设了新值，on_changed_body 函数就会自动被调用
 # on_changed_body 函数把body字段中的文本渲染成 HTML 格式，结果保存在 body_html 中
 db.event.listen(Post.body, 'set', Post.on_changed_body)
+
+
+
 
 @login_manager.user_loader
 def load_user(user_id):

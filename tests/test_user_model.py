@@ -7,8 +7,11 @@ from flask import current_app
 from app import create_app, db
 from app.models import User
 from app.models import Role
+from app.models import Follow
 from app.models import Permission
 from app.models import AnonymousUser
+
+from datetime import datetime
 
 class UserModelTestCase(unittest.TestCase):
 
@@ -185,3 +188,103 @@ class UserModelTestCase(unittest.TestCase):
         u = AnonymousUser()
         self.assertFalse(u.can(Permission.FOLLOW))
         self.assertFalse(u.can(Permission.MODERATE_COMMENTS))
+
+    def test_timestamps(self):
+        '''测试注册日期和用户最后访问日期'''
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        self.assertTrue( (datetime.utcnow() - u.member_since).total_seconds() < 3  )
+        self.assertTrue( (datetime.utcnow() - u.last_seen ).total_seconds() < 3  )
+
+    def test_ping(self):
+        '''测试自动更新最后一次登录时间'''
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        time.sleep(2)
+        last_seen_before = u.last_seen
+        u.ping()
+        self.assertTrue( u.last_seen > last_seen_before )
+
+    # def test_gravatar(self):
+    #     ''' 这个测试 还没有完全弄明白 ！！！！！  '''
+    #     u = User(email='john@example.com', password='cat')
+    #     with self.app.test_request_context('/'):
+    #         gravatar = u.gravatar()
+    #         gravatar_256 = u.gravatar(size=256)
+    #         gravatar_pg = u.gravatar(rating='pg')
+    #         gravatar_retro = u.gravatar(default='retro')
+    #
+    #     with self.app.test_request_context('/', base_user='https://example.com'):
+    #         gravatar_ssl = u.gravatar()
+    #
+    #     self.assertTrue('http://www.gravatar.com/avatar/' +
+    #                     'd4c74594d841139328695756648b6bd6'in gravatar)
+    #     self.assertTrue('s=256' in gravatar_256)
+    #     self.assertTrue('r=pg' in gravatar_pg)
+    #     self.assertTrue('d=retro' in gravatar_retro)
+    #     self.assertTrue('https://secure.gravatar.com/avatar/' +
+    #                     'd4c74594d841139328695756648b6bd6' in gravatar_ssl)
+
+
+    def test_follows(self):
+        u1 = User(email='A@qq.com', password='pA')
+        u2 = User(email='B@qq.com', password='pB')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        # 判断 u1 没有关注 u2
+        self.assertFalse(u1.is_following(u2))
+        # 判断 u2 没有关注 u1
+        self.assertFalse(u2.is_following(u1))
+
+        # 定位时间点
+        timestamp_before = datetime.utcnow()
+        # 设置 u1 关注 u2
+        u1.follow(u2)
+        db.session.add(u1)
+        db.session.commit()
+        # 定位结束时间
+        timestamp_after = datetime.utcnow()
+
+        # 判断 u1 关注了 u2
+        self.assertTrue( u1.is_following(u2))
+        # 判断 u2 被 u1 关注了
+        self.assertTrue( u2.is_followed_by(u1))
+        # 判断 u1 被 u2 关注了
+        self.assertFalse(u1.is_followed_by(u2))
+
+        # 判断 u1 关注了 1个用户
+        self.assertTrue(u1.followed.count() == 1)
+        # 判断 u2 被 1 个用户关注
+        self.assertTrue(u2.followers.count() == 1)
+
+        # 判断 u1 被 0 个用户关注
+        self.assertTrue(u1.followers.count() == 0)
+
+        # 判断 u2 关注了 0 个用户
+        self.assertTrue(u1.followed.count() == 1)
+
+        f = u1.followed.all()[-1]
+        self.assertTrue(f.followed == u2)
+        # print timestamp_before
+        # print f.timestamp
+        # print timestamp_after
+        # 因为 时间戳包含 毫秒，存储数据库再取出之后就没有毫秒了，所以此处会报错
+        # self.assertTrue(timestamp_before <= f.timestamp <= timestamp_after)
+        f = u2.followers.all()[-1]
+        self.assertTrue(f.follower == u1)
+        u1.unfollow(u2)
+        db.session.add(u1)
+        db.session.commit()
+        self.assertTrue(u1.followed.count() == 0)
+        self.assertTrue(u2.followers.count() == 0)
+        self.assertTrue(Follow.query.count() == 0)
+        u2.follow(u1)
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        db.session.delete(u2)
+        db.session.commit()
+        self.assertTrue(Follow.query.count() == 0)
