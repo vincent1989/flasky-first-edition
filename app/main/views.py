@@ -55,7 +55,7 @@ def index():
 
 
 
-@main.route('/user/<username>', methods=['GET', 'POST'])
+@main.route('/user/<username>')
 def user(username):
     '''用户资料页面'''
     # 获取用户
@@ -145,10 +145,11 @@ def edit_post(id):
     form.body.data = post.body
     return render_template('edit_post.html', form=form)
 
-@main.route('/follow/<username>', methods=['GET' 'POST'])
+@main.route('/follow/<username>')
 @login_required
 @permission_required(Permission.FOLLOW)
 def follow(username):
+    print "AAAA"
     user = User.query.filter_by(username=username).first()
     if user is None:
         flash('无效的用户')
@@ -160,7 +161,7 @@ def follow(username):
     flash('关注`{}`成功'.format(username))
     return redirect(url_for('.user', username=username))
 
-@main.route('/unfollow/<username>', methods=['GET' 'POST'])
+@main.route('/unfollow/<username>')
 @login_required
 @permission_required(Permission.FOLLOW)
 def unfollow(username):
