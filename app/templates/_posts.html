@@ -24,10 +24,6 @@
                     {% endif %}
                 </div>
                 <div class="post-footer">
-                    <a href="{{ url_for('.post', id=post.id) }}">
-                        <span class="label label-default">Permalink</span>
-                    </a>
-
                     {% if current_user == post.author %}
                         <a href="{{ url_for('.edit_post', id=post.id) }}">
                             <span class="label label-primary">Edit</span>
@@ -37,6 +33,17 @@
                             <span class="label label-danger">Edit [Admin]</span>
                         </a>
                     {% endif %}
+                    <a href="{{ url_for('.post', id=post.id) }}">
+                        <span class="label label-default">Permalink</span>
+                    </a>
+                    {# 注意指向评论的链接地址结构有些特殊。这个链接的地址是在文章的固定链接后面添加一个 #comments 后缀，
+                       这个后缀被称之为URL片段，用于指定加载页后滚动条所在的初始位置，WEB浏览器会寻找id等于URL片段的元素并滚动页面，
+                       让这个元素显示在窗口顶部，这个初始位置被设置为 post.html 模版中评论区的标题，即<h4 id="comments">Comments</h4>    #}
+                    <a href="{{ url_for('.post', id=post.id) }}#comments">
+                        <span class="label label-primary">
+                            {{ post.comments.count() }}  Comments
+                        </span>
+                    </a>
                 </div>
             </div>
         </li>

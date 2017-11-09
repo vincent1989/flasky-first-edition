@@ -122,6 +122,9 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     # 确定与另一张表Post的关联关系，并向Post表中插入反向引用关系属性 posts,这样post可以通过访问属性author来获取对象而不是author_id的值了
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    # 评论相关
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
 
 
     # 对 followed／followers 的说明
@@ -370,6 +373,8 @@ class Post(db.Model):
     # body的HTML格式数据
     body_html = db.Column(db.Text)
 
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
 
     @staticmethod
     def generate_fake(count=100):
@@ -407,6 +412,30 @@ class Post(db.Model):
 # on_changed_body 函数把body字段中的文本渲染成 HTML 格式，结果保存在 body_html 中
 db.event.listen(Post.body, 'set', Post.on_changed_body)
 
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    @staticmethod
+    def on_change_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i', 'strong']
+        target.body_html = bleach.linkify(
+            bleach.clean(
+                markdown(value, output_format='html'),
+                tags=allowed_tags,
+                strip=True
+            )
+        )
+
+db.event.listen('Comment.body', 'set', Comment.on_change_body)
 
 @login_manager.user_loader
 def load_user(user_id):

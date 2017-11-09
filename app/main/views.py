@@ -20,11 +20,13 @@ from .forms import NameForm
 from .forms import EditProfileForm
 from .forms import EditProfileAdminForm
 from .forms import PostForm
+from .forms import CommentForm
 
 from .. import db
 from ..models import User
 from ..models import Role
 from ..models import Post
+from ..models import Comment
 from ..models import Permission
 from ..decorators import admin_required
 from ..decorators import permission_required
@@ -160,9 +162,39 @@ def edit_profile_admin(id):
 
 @main.route('/post/<int:id>')
 def post(id):
-    '''获取指定的 博文'''
+    '''实例化一个评论表单，并将其传入 post.html 模板，以便渲染'''
+    # 根据 帖子的ID获取帖子的实例对象，如果不存在帖子，则直接返回404错误
     post = Post.query.get_or_404(id)
-    return render_template('post.html', posts=[post])
+    # 实例化 评论提交表单
+    form = CommentForm()
+    # 如果表单中的所有数据都能够被对应的验证函数通过，则 validate_on_submit() 会返回True，否则返回False
+    if form.validate_on_submit():
+        # 注意添加评论时，评论的 author 值应不能设置为 current_user，因为这个变量是上下文代理对象。真正的User对象
+        # 需要使用表达式 curretn_user._get_current_object() 获取
+        comment = Comment(body=form.body.data,
+                          post=post,
+                          author=current_user._get_current_object())
+        db.session.add(comment)
+        flash('您的评论已提交')
+        # 在url_for()中，通常通过设置 page=-1 来请求评论的最后一页，这样刚刚提交的评论才会出现在页面中
+        return redirect(url_for('.post', id=post.id, page=-1))
+    # 获取 请求参数中的page值，并设定默认值1 设置类型为 int
+    page = request.args.get('page', '1', type=int)
+    if page == -1:
+        # 如果在请求中发现 page=-1,那么会在计算评论的总数量以及配置中每页显示的评论数量，从而获得真正应该显示的页数
+        page = (post.comments.count() - 1) / current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1
+    # 文章的评论列表通过 post。comments 一对多关系获取 按照时间顺序降序排列，再使用与博客文章相同的技术分页显示
+    pagination = post.comments.order_by(Comment.timestamp.asc()).paginate(
+        page,
+        per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False
+    )
+    comments = pagination.items
+    return render_template('post.html',
+                           posts=[post],
+                           form=form,
+                           comments=comments,
+                           pagination=pagination)
 
 @main.route('/edit-post/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -264,3 +296,4 @@ def followed_by(username):
         pagination=pagination,
         follows=follows
     )
+

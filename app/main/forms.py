@@ -77,5 +77,11 @@ class EditProfileAdminForm(FlaskForm):
             raise ValidationError('用户名已被注册！')
 
 class PostForm(FlaskForm):
+    '''帖子内容提交表单'''
     body = PageDownField("What's on your mind?", validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class CommentForm(FlaskForm):
+    '''帖子的评论提交表单'''
+    body = PageDownField('', validators=[DataRequired()])
+    submit = SubmitField('提交')

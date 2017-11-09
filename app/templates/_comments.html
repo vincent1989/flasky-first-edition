@@ -1,0 +1,31 @@
+<ul class="comments">
+    {% for comment in comments %}
+        <li class="comment">
+            <div class="comment-thumbnail">
+                <a href="{{ url_for('.user', username=comment.author.username) }}">
+                    <img class="img-rounded profile-thumbnail" src="{{ comment.author.gravatar(size=40) }}">
+                </a>
+            </div>
+            <div class="comment-content">
+                <div class="comment-date">{{ moment(comment.timestamp).fromNow() }}</div>
+                <div class="comment-author">
+                    <a href="{{ url_for('.user', username=comment.author.username) }}">
+                        {{ comment.author.username }}
+                    </a>
+                </div>
+                <div class="comment-body">
+                    {% if comment.body_html %}
+                        {#  注意渲染 HTML格式内容时 使用 | safe 后缀，其目的是告诉jinjia2 不要转义HTML元素。
+                        出于安全考虑，jinjia2 默认会转义所有模版变量。又因为 MarkDown 转换成的 HTML是在服务器端生成的，
+                        因此可以放心使用#}
+                        {{ comment.body_html | safe }}
+                    {% else %}
+                        {{ comment.body }}
+                    {% endif %}
+                </div>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
+
+
