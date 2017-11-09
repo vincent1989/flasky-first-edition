@@ -160,7 +160,7 @@ def edit_profile_admin(id):
     return render_template('edit_profile.html', form=form, user=user)
 
 
-@main.route('/post/<int:id>')
+@main.route('/post/<int:id>', methods=['GET', 'POST'])
 def post(id):
     '''实例化一个评论表单，并将其传入 post.html 模板，以便渲染'''
     # 根据 帖子的ID获取帖子的实例对象，如果不存在帖子，则直接返回404错误
@@ -179,7 +179,7 @@ def post(id):
         # 在url_for()中，通常通过设置 page=-1 来请求评论的最后一页，这样刚刚提交的评论才会出现在页面中
         return redirect(url_for('.post', id=post.id, page=-1))
     # 获取 请求参数中的page值，并设定默认值1 设置类型为 int
-    page = request.args.get('page', '1', type=int)
+    page = request.args.get('page', 1, type=int)
     if page == -1:
         # 如果在请求中发现 page=-1,那么会在计算评论的总数量以及配置中每页显示的评论数量，从而获得真正应该显示的页数
         page = (post.comments.count() - 1) / current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1

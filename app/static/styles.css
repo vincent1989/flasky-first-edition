@@ -18,6 +18,11 @@ ul.posts {
     border-top: 1px solid #e0e0e0;
 }
 
+div.post-tabs ul.posts {
+    margin: 0px;
+    border-top: none;
+}
+
 ul.posts li.post {
     padding: 8px;
     border-bottom: 1px solid #e0e0e0;
@@ -97,7 +102,7 @@ div.pagination {
 }
 
 div.flask-pagedown-preview {
-    margin: 10px 0px 0px 0px;
+    margin: 10px 0px 10px 0px;
     border: 1px solid #e0e0e0;
     padding: 4px;
 }
