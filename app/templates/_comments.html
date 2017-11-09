@@ -14,6 +14,10 @@
                     </a>
                 </div>
                 <div class="comment-body">
+                {% if comment.disable %}
+                    <p><i>This comment has been disabled by a moderator.</i></p>
+                {% endif %}
+                {% if moderate or not comment.disabled %}
                     {% if comment.body_html %}
                         {#  注意渲染 HTML格式内容时 使用 | safe 后缀，其目的是告诉jinjia2 不要转义HTML元素。
                         出于安全考虑，jinjia2 默认会转义所有模版变量。又因为 MarkDown 转换成的 HTML是在服务器端生成的，
@@ -22,7 +26,21 @@
                     {% else %}
                         {{ comment.body }}
                     {% endif %}
+                {% endif %}
                 </div>
+
+                {% if moderate %}
+                    <br>
+                    {% if comment.disabled %}
+                        <a class="btn btn-default btn-xs" href="{{ url_for('.moderate_enable', id=comment.id, page=page) }}">
+                            Enable
+                        </a>
+                    {% else %}
+                        <a class="btn btn-danger btn-xs" href="{{ url_for('.moderate_disable', id=comment.id, page=page) }}">
+                            Disable
+                        </a>
+                    {% endif %}
+                {% endif %}
             </div>
         </li>
     {% endfor %}
