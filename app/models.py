@@ -435,7 +435,7 @@ class Comment(db.Model):
             )
         )
 
-db.event.listen('Comment.body', 'set', Comment.on_change_body)
+db.event.listen(Comment.body, 'set', Comment.on_change_body)
 
 @login_manager.user_loader
 def load_user(user_id):
