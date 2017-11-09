@@ -83,5 +83,5 @@ class PostForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     '''帖子的评论提交表单'''
-    body = PageDownField('输入您的评论', validators=[DataRequired()])
+    body = StringField('输入您的评论', validators=[DataRequired()])
     submit = SubmitField('提交')
