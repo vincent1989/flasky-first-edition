@@ -335,6 +335,9 @@ class User(UserMixin, db.Model):
             except IntegrityError:
                 db.session.rollback()
 
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
 
 
 
@@ -397,8 +400,6 @@ class Post(db.Model):
 # 这意味这只要这个类实例的body字段设了新值，on_changed_body 函数就会自动被调用
 # on_changed_body 函数把body字段中的文本渲染成 HTML 格式，结果保存在 body_html 中
 db.event.listen(Post.body, 'set', Post.on_changed_body)
-
-
 
 
 @login_manager.user_loader

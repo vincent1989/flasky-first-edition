@@ -10,6 +10,7 @@ from flask import url_for
 from flask import abort
 from flask import flash
 from flask import request
+from flask import make_response
 from flask import current_app
 from flask_login import login_required
 from flask_login import current_user
@@ -44,14 +45,51 @@ def index():
         return redirect(url_for('.index'))
 
     page = request.args.get('page', 1, type=int)
+
+    show_followed = False
+    if current_user.is_authenticated:
+        show_followed = bool(request.cookies.get('show_followed', ''))
+
+    if show_followed:
+        query = current_user.followed_posts
+    else:
+        query = Post.query
+
     # 注意：为显示某页中的数据，需要把all()方法替换为Flask-SQLAlchemy 提供的 paginate()方法，
-    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+    pagination = query.order_by(Post.timestamp.desc()).paginate(
         page,  # 表示页数
         per_page=current_app.config['FLASKY_POSTS_PER_PAGE'], # 表示每页展示的记录数量
         error_out=False  # 当请求页数超出范围之后，如果error_out=True,则返回404错误，否则返回一个空列表
     )
+    # print
+    # print str(query.order_by(Post.timestamp.desc()))
     posts = pagination.items
-    return render_template('index.html', form=form, posts=posts, pagination=pagination)
+    return render_template('index.html',
+                           form=form,
+                           posts=posts,
+                           show_followed=show_followed,
+                           pagination=pagination)
+
+
+# 路由 show_all 和 show_followed 的解说：
+# 因为指向这两个路由的链接添加在首页模版中，点击这两个链接之后会为 show_followedcookie 设定适当的值，
+# 然后重定向到首页。cookie 只能在响应对象中设置，因此这两个路由不能依赖 Flask，要使用 make_response() 方法创建响应对象
+# set_cookie() 函数的前两个参数分别是 cookie 中的键名和键值。可选参数 max_age 设置的是cookie的过期时间，单位为秒
+# 如果不指定参数 max_cookie，那么浏览器关闭之后cookie就会过期，在本例子中设置的过期时间为30天
+
+@main.route('/all')
+@login_required
+def show_all():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '', max_age=30*24*60*60)
+    return resp
+
+@main.route('/followed')
+@login_required
+def show_followed():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '1', max_age=30*24*60*60)
+    return resp
 
 
 
@@ -149,7 +187,7 @@ def edit_post(id):
 @login_required
 @permission_required(Permission.FOLLOW)
 def follow(username):
-    print "AAAA"
+    '''执行 关注某一用户操作'''
     user = User.query.filter_by(username=username).first()
     if user is None:
         flash('无效的用户')
@@ -165,6 +203,7 @@ def follow(username):
 @login_required
 @permission_required(Permission.FOLLOW)
 def unfollow(username):
+    '''执行 取消关注某一用户操作'''
     user = User.query.filter_by(username=username).first()
     if user is None:
         flash('无效的用户')
@@ -178,6 +217,7 @@ def unfollow(username):
 
 @main.route('/followers/<username>')
 def followers(username):
+    '''展示我关注的人'''
     user = User.query.filter_by(username=username).first()
     if user is None:
         flash('无效的用户')
@@ -202,6 +242,7 @@ def followers(username):
 
 @main.route('/followed-by/<username>')
 def followed_by(username):
+    '''展示 关注我的人'''
     user = User.query.filter_by(username=username).first()
     if user is None:
         flash('无效的用户')
