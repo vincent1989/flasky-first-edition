@@ -339,7 +339,13 @@ class User(UserMixin, db.Model):
     def followed_posts(self):
         return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
 
-
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
 class AnonymousUser(AnonymousUserMixin):
     '''处于一致性考虑，专门定义此类实现 未登录用户的 can() 和 is_administrator() 方法。
