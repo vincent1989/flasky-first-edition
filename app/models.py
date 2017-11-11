@@ -20,8 +20,10 @@ from flask_login import AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
 from flask import request
+from flask import url_for
 
 from . import db, login_manager
+from app.exceptions import ValidationError
 
 class Permission:
     '''权限常量'''
@@ -350,6 +352,38 @@ class User(UserMixin, db.Model):
                 db.session.add(user)
                 db.session.commit()
 
+    def generate_auth_token(self, expiration):
+        '''使用编码后的用户ID字段值生成一个签名令牌，指定以秒为单位的过期时间'''
+        s = Serializer(current_app.config['SECRET_KEY'],
+                       expires_in=expiration)
+        return s.dumps({'id': self.id})
+
+    @staticmethod
+    def verify_auth_token(token):
+        '''解码用户令牌，如果解码成功且可用，则返回对应用户ID'''
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data['id'])
+
+    def to_json(self):
+        '''返回JSON格式的用户信息'''
+        # 注意，url_for() 中参数 _external=True 是为了生成完整的URL，而不是生成Web程序中的相对URL
+        json_post = {
+            'url' : url_for('api.get_user', id=self.id, _external=True),
+            'username' : self.username,
+            'member_since': self.member_since,
+            'last_seen' : self.last_seen,
+            'posts' : url_for('api.get_user_posts', id=self.id, _external=True),
+            'followed_posts' : url_for('api.get_user_followed_posts', id=self.id, _external=True),
+            'post_count' : self.posts.count()
+        }
+        return json_post
+
+
+
 class AnonymousUser(AnonymousUserMixin):
     '''处于一致性考虑，专门定义此类实现 未登录用户的 can() 和 is_administrator() 方法。
     这个对象继承自Flask-Login中的AnonymousUserMixin类，并将其设置为用户未登录时 current_user的值
@@ -407,6 +441,28 @@ class Post(db.Model):
                 strip=True)
         )
 
+
+    def to_json(self):
+        '''返回JSON格式的博文信息'''
+        # 注意，url_for() 中参数 _external=True 是为了生成完整的URL，而不是生成Web程序中的相对URL
+        json_post = {
+            'url' : url_for('api.get_post', id=self.id, _external=True),
+            'body': self.body,
+            'body_html' : self.body_html,
+            'timestamp' : self.timestamp,
+            'author' : url_for('api.get_user', id=self.author_id, _external=True),
+            'comments' : url_for('api.get_post_comments', id=self.id, _external=True),
+            'comment_count' : self.comments.count()
+        }
+        return json_post
+
+    @staticmethod
+    def from_json(json_post):
+        body = json_post.get('body')
+        if body is None or body == '':
+            raise ValidationError('post does not have a body')
+        return Post(body=body)
+
 # 说明：以下操作将 Post的 on_changed_body 函数注册到body字段上，是SQLAlchemy "set"事件的监听程序。
 # 这意味这只要这个类实例的body字段设了新值，on_changed_body 函数就会自动被调用
 # on_changed_body 函数把body字段中的文本渲染成 HTML 格式，结果保存在 body_html 中
@@ -434,6 +490,24 @@ class Comment(db.Model):
                 strip=True
             )
         )
+
+    def to_json(self):
+        json_comment = {
+            'url' : url_for('api.get_comment', id=self.id, _external=True),
+            'post' : url_for('pai.get_post', id=self.post_id, _external=True),
+            'body' : self.body,
+            'body_html' : self.body_html,
+            'timestamp' : self.timestamp,
+            'author' : url_for('api.get_user', id=self.author_id, _external=True)
+        }
+        return json_comment
+
+    @staticmethod
+    def from_json(json_comment):
+        body = json_comment.get('body')
+        if body is None or body == '':
+            raise ValidationError('comment does no have a body')
+        return Comment(body=body)
 
 db.event.listen(Comment.body, 'set', Comment.on_change_body)
 
