@@ -15,7 +15,9 @@ from flask_migrate import Migrate, MigrateCommand
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
-app = create_app(os.getenv('FLASKY_CONFIG') or 'default')
+cfg=os.getenv('FLASKY_CONFIG') or 'default'
+
+app = create_app(cfg)
 # 加载一些命令行工具包
 manager = Manager(app)
 migrate = Migrate(app, db)
@@ -32,6 +34,7 @@ manager.add_command('db', MigrateCommand)
 def test():
     """运行这个单元测试"""
     import unittest
+    cfg='testing'
     tests = unittest.TestLoader().discover('tests')
     unittest.TextTestRunner(verbosity=2).run(tests)
 

@@ -326,9 +326,11 @@ class User(UserMixin, db.Model):
 
         seed()
         for i in range(count):
+            username=forgery_py.internet.user_name()
             u = User(email=forgery_py.internet.email_address(),
-                     username=forgery_py.internet.user_name(),
-                     password=forgery_py.lorem_ipsum.word(),
+                     username=username,
+                     # password=forgery_py.lorem_ipsum.word(),
+                     password=username,
                      confirmed=True,
                      name=forgery_py.name.full_name(),
                      location=forgery_py.address.city(),
