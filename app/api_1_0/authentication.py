@@ -8,10 +8,13 @@ from flask_httpauth import HTTPBasicAuth
 from ..models import User
 from ..models import AnonymousUser
 
+from . import api
+
 from .errors import forbidden
 from .errors import unauthorized
 
-from . import api
+auth = HTTPBasicAuth()
+
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -22,7 +25,7 @@ auth = HTTPBasicAuth()
 @auth.verify_password
 def verify_password(email_or_token, password):
     '''验证用户密码'''
-    if email_or_token =='':
+    if email_or_token == '':
         # 没有邮件或密码阿德情况下默认设置为 匿名用户
         g.current_user = AnonymousUser()
         return True

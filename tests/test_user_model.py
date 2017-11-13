@@ -207,25 +207,6 @@ class UserModelTestCase(unittest.TestCase):
         u.ping()
         self.assertTrue( u.last_seen > last_seen_before )
 
-    # def test_gravatar(self):
-    #     ''' 这个测试 还没有完全弄明白 ！！！！！  '''
-    #     u = User(email='john@example.com', password='cat')
-    #     with self.app.test_request_context('/'):
-    #         gravatar = u.gravatar()
-    #         gravatar_256 = u.gravatar(size=256)
-    #         gravatar_pg = u.gravatar(rating='pg')
-    #         gravatar_retro = u.gravatar(default='retro')
-    #
-    #     with self.app.test_request_context('/', base_user='https://example.com'):
-    #         gravatar_ssl = u.gravatar()
-    #
-    #     self.assertTrue('http://www.gravatar.com/avatar/' +
-    #                     'd4c74594d841139328695756648b6bd6'in gravatar)
-    #     self.assertTrue('s=256' in gravatar_256)
-    #     self.assertTrue('r=pg' in gravatar_pg)
-    #     self.assertTrue('d=retro' in gravatar_retro)
-    #     self.assertTrue('https://secure.gravatar.com/avatar/' +
-    #                     'd4c74594d841139328695756648b6bd6' in gravatar_ssl)
 
 
     def test_follows(self):
