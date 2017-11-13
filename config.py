@@ -54,6 +54,11 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    # 测试客户端可以使用 post() 方法发送包含表单数据的 POST请求，不过提交表单时会有一个小麻烦。
+    # Flask-WTF生成的表单中包含一个隐藏字段，其内容就是CSRF令牌，需要和表单中的数据一起提交。
+    # 为了复现这个功能，测试必须请求包含表单的页面，然后解析响应返回的HTML代码并提取令牌，这样才能把令牌和表单中的数据一起发送。
+    # 为了避免在测试中处理 CSRF 令牌操作，可以通过在 测试的配置文件中禁用CSRF保护功能，设置 WTF_CSRF_ENABLE = False
+    WTF_CSRF_ENABLED = False
     # 数据库URL
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
