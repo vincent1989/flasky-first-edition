@@ -118,10 +118,9 @@ class APITestCase(unittest.TestCase):
         
         # 验证token
         response = self.client.get(
-            url_for('api.get_token'),
+            url_for('api.get_posts'),
             headers=self.get_api_headers(token, '')
         )
-        print response.__dict__
         self.assertTrue(response.status_code == 200)
 
 
@@ -223,12 +222,9 @@ class APITestCase(unittest.TestCase):
         )
         self.assertTrue(response.status_code == 200)
         json_response = json.loads(response.data.decode('utf-8'))
-        print "BBBBB"
-        print json_response
-        print "CCCCC"
         self.assertIsNotNone(json_response.get('posts'))
         self.assertTrue(json_response.get('count', 0) == 1)
-        self.assertTrue(json_response['post'][0] == json_post)
+        self.assertTrue(json_response['posts'][0] == json_post)
 
         # 编辑博文
         response = self.client.put(
@@ -272,7 +268,7 @@ class APITestCase(unittest.TestCase):
         json_response = json.loads(response.data.decode('utf-8'))
         self.assertTrue(json_response['username'] == 'susan')
 
-    def test_comment(self):
+    def test_comments(self):
         '''测试评论接口'''
         # 添加两个用户
         r = Role.query.filter_by(name='User').first()
@@ -293,15 +289,15 @@ class APITestCase(unittest.TestCase):
             headers=self.get_api_headers('susan@example.com', 'dog'),
             data=json.dumps({'body':'Good [post](http://example.com)!'})
         )
-        self.assertTrue(response.status_code == 200)
+        self.assertTrue(response.status_code == 201)
         json_response = json.loads(response.data.decode('utf-8'))
-        url = json_response.get('Location')
+        url = response.headers.get('Location')
         self.assertIsNotNone(url)
         self.assertTrue(json_response['body'] == 'Good [post](http://example.com)!' )
         self.assertTrue(re.sub('<.*?>', '', json_response['body_html']) == 'Good post!')
 
         # 获取这个新增加的评论
-        response = self.client.post(
+        response = self.client.get(
             url,
             headers=self.get_api_headers('john@example.com', 'cat')
         )
@@ -310,13 +306,14 @@ class APITestCase(unittest.TestCase):
         self.assertTrue(json_response['url'] == url )
         self.assertTrue(json_response['body'] == 'Good [post](http://example.com)!' )
 
+
         # 添加作者评论
         comment = Comment(body='Thank you!', author=u1, post=post)
         db.session.add(comment)
         db.session.commit()
 
         # 从这篇博文中获取 评论
-        response = self.client.post(
+        response = self.client.get(
             url_for('api.get_post_comments', id=post.id),
             headers=self.get_api_headers('susan@example.com', 'dog')
         )
@@ -326,7 +323,7 @@ class APITestCase(unittest.TestCase):
         self.assertTrue(json_response.get('count', 0) == 2)
 
         # 获取所有的评论
-        response = self.client.post(
+        response = self.client.get(
             url_for('api.get_comments', id=post.id),
             headers=self.get_api_headers('susan@example.com', 'dog')
         )
@@ -334,6 +331,3 @@ class APITestCase(unittest.TestCase):
         json_response = json.loads(response.data.decode('utf-8'))
         self.assertIsNotNone(json_response.get('comments'))
         self.assertTrue(json_response.get('count', 0) == 2)
-
-
-

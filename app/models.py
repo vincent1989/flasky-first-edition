@@ -167,6 +167,7 @@ class User(UserMixin, db.Model):
             # 邮件头像hash值
             if self.email is not None and self.avatar_hash is None:
                 self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        self.followed.append(Follow(followed=self))
 
 
 
@@ -496,7 +497,7 @@ class Comment(db.Model):
     def to_json(self):
         json_comment = {
             'url' : url_for('api.get_comment', id=self.id, _external=True),
-            'post' : url_for('pai.get_post', id=self.post_id, _external=True),
+            'post' : url_for('api.get_post', id=self.post_id, _external=True),
             'body' : self.body,
             'body_html' : self.body_html,
             'timestamp' : self.timestamp,

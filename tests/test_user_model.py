@@ -215,10 +215,10 @@ class UserModelTestCase(unittest.TestCase):
         db.session.add(u1)
         db.session.add(u2)
         db.session.commit()
-        # 判断 u1 没有关注 u2
+        # 判断 u1 已关注 u2
         self.assertFalse(u1.is_following(u2))
-        # 判断 u2 没有关注 u1
-        self.assertFalse(u2.is_following(u1))
+        # 判断 u1 已被 u2 关注
+        self.assertFalse(u1.is_followed_by(u2))
 
         # 定位时间点
         timestamp_before = datetime.utcnow()
@@ -231,21 +231,16 @@ class UserModelTestCase(unittest.TestCase):
 
         # 判断 u1 关注了 u2
         self.assertTrue( u1.is_following(u2))
-        # 判断 u2 被 u1 关注了
-        self.assertTrue( u2.is_followed_by(u1))
         # 判断 u1 被 u2 关注了
-        self.assertFalse(u1.is_followed_by(u2))
+        self.assertFalse( u1.is_followed_by(u2))
 
-        # 判断 u1 关注了 1个用户
-        self.assertTrue(u1.followed.count() == 1)
-        # 判断 u2 被 1 个用户关注
-        self.assertTrue(u2.followers.count() == 1)
+        # 判断 u2 被 u1 关注了
+        self.assertTrue(u2.is_followed_by(u1))
 
-        # 判断 u1 被 0 个用户关注
-        self.assertTrue(u1.followers.count() == 0)
-
-        # 判断 u2 关注了 0 个用户
-        self.assertTrue(u1.followed.count() == 1)
+        # 判断 u1 关注了 2个用户
+        self.assertTrue(u1.followed.count() == 2)
+        # 判断 u2 被 2 个用户关注
+        self.assertTrue(u2.followers.count() == 2)
 
         f = u1.followed.all()[-1]
         self.assertTrue(f.followed == u2)
@@ -256,19 +251,20 @@ class UserModelTestCase(unittest.TestCase):
         # self.assertTrue(timestamp_before <= f.timestamp <= timestamp_after)
         f = u2.followers.all()[-1]
         self.assertTrue(f.follower == u1)
+
         u1.unfollow(u2)
         db.session.add(u1)
         db.session.commit()
-        self.assertTrue(u1.followed.count() == 0)
-        self.assertTrue(u2.followers.count() == 0)
-        self.assertTrue(Follow.query.count() == 0)
+        self.assertTrue(u1.followed.count() == 1)
+        self.assertTrue(u2.followers.count() == 1)
+        self.assertTrue(Follow.query.count() == 2)
         u2.follow(u1)
         db.session.add(u1)
         db.session.add(u2)
         db.session.commit()
         db.session.delete(u2)
         db.session.commit()
-        self.assertTrue(Follow.query.count() == 0)
+        self.assertTrue(Follow.query.count() == 1)
 
 
     def test_to_json(self):
