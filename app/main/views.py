@@ -3,6 +3,10 @@ __author__ = 'vincent'
 
 import sys
 from datetime import datetime
+# 说明，get_debug_queries() 返回的是一个列表，其元素是请求中执行的查询，
+# 默认情况下，该函数只在调试模式下可用， 一般开发过程中使用的数据库比较小，因此，生产环境中使用该选项才能发挥作用
+# 如果需要在生产环境中分析数据库性能，则需要在配置中添加两项 SQLALCHEMY_TRACK_MODIFICATIONS=True
+from flask_sqlalchemy import get_debug_queries
 from flask import render_template
 from flask import session
 from flask import redirect
@@ -335,3 +339,18 @@ def moderate_disable(id):
     db.session.add(comment)
     return redirect(url_for('.moderate',
                             page=request.args.get('page', 1, type=int)))
+
+
+@main.after_app_request
+def after_request(response):
+    '''请求结束之后，根据配置的满查询阀值，打印出慢查询SQL信息'''
+    for query in get_debug_queries():
+        if query.duration >= current_app.config['FLASKY_SLOW_DB_QUERY_TIME']:
+            current_app.logger.warning(
+                'Slow query: %s\nParameters: %s\nDuration: %fs\nContext: %s\n' % (
+                    query.statement,
+                    query.parameters,
+                    query.duration,
+                    query.context)
+            )
+    return response

@@ -14,8 +14,11 @@ class Config:
     # DB 相关
     # 开启自动提交
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
-    # 避免内存开销太大，所以禁止此项
-    SQLALCHEMY_TRACK_MODIFICATIONS = True
+    # 避免内存开销太大，所以禁止此项,设置True;
+    # 如果要开启慢查询，则此项需要设置 SQLALCHEMY_TRACK_MODIFICATIONS=False 并设置 SQLALCHEMY_RECORD_QUERIES=True
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # 开启慢查询
+    SQLALCHEMY_RECORD_QUERIES = True
 
     # 邮件服务相关
     MAIL_SERVER = 'smtp.mxhichina.com'
@@ -36,7 +39,7 @@ class Config:
     FLASKY_FOLLOWERS_PER_PAGE = 50
     # 每页的 评论信息 数量
     FLASKY_COMMENTS_PER_PAGE = 30
-    #
+    # SQL慢查询的阀值
     FLASKY_SLOW_DB_QUERY_TIME = 0.5
 
 
