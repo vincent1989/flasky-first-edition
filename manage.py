@@ -71,6 +71,8 @@ def test(coverage=False):
 @manager.command
 def profile(length=25, profile_dir=None):
     '''在代码分析器下启动该程序'''
+    # 注意，使用命令 python manage.py profile 启动程序之后，终端会显示每条请求的分析数据，其中包含运行最慢的25个函数
+    # --length 选项可以修改报告中显示的函数数量，如果指定了 --profile-dir 选项，则每条分析请求都会保存在指定目录下的一个文件中
     from werkzeug.contrib.profiler import  ProfilerMiddleware
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length], profile_dir=profile_dir)
     app.run()
