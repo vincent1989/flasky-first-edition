@@ -8,9 +8,11 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
+    # 是否开启安全的HTTP
+    SSL_DISABLE = True
+
     # 密匙相关
     SECRET_KEY = os.environ.get('TEST_SECRET_KEY') or 'hard to guess string'
-
     # DB 相关
     # 开启自动提交
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
@@ -97,12 +99,48 @@ class ProductionConfig(Config):
 
 
 
+class HerokuConfig(ProductionConfig):
+
+    # 从环境变量中获取是否禁用SSL配置
+    SSL_DISABLE = bool(os.environ.get('SSL_DISABLE'))
+
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+
+        # 日志输出到 stderr
+        import logging
+        from logging import StreamHandler
+        file_handler = StreamHandler()
+        file_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(file_handler)
+
+        # 处理服务器首部
+        from werkzeug.contrib.fixers import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app)
+
+class UnixConfig(ProductionConfig):
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+
+        # 将日志答应到系统日志中
+        import logging
+        from logging.handlers import SysLogHandler
+        syslog_handler = SysLogHandler()
+        syslog_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(syslog_handler)
+
+
 
 
 config = {
     'development' : DevelopmentConfig,
     'testing' : TestingConfig,
     'production':ProductionConfig,
+
+    'heroku' : HerokuConfig,
+    'unix' : UnixConfig,
 
     'default' : DevelopmentConfig
 }
