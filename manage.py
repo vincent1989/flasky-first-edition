@@ -77,5 +77,20 @@ def profile(length=25, profile_dir=None):
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length], profile_dir=profile_dir)
     app.run()
 
+@manager.command
+def deploy():
+    '''运行部署任务'''
+    from flask_migrate import upgrade
+    from app.models import Role, User
+
+    # 更新数据库
+    upgrade()
+
+    # 更新角色信息
+    Role.insert_roles()
+    
+    # 所有用户关注自己
+    User.add_self_follows()
+
 if __name__ == '__main__':
     manager.run()
